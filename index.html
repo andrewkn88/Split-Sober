@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="여행 경비를 참석자끼리 균등하게 나누고, 누가 누구에게 얼마를 보낼지 계산해 주는 모바일 정산 앱">
+<meta name="theme-color" content="#EFEDE7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1719" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%BE%3C/text%3E%3C/svg%3E">
+<title>N빵 정산기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#EFEDE7;
+    --surface:#FCFBF8;
+    --surface-2:#E5E2D9;
+    --ink:#182A2E;
+    --ink-2:#5E7074;
+    --ink-3:#8B9A9C;
+    --line:#D6D2C6;
+    --line-soft:#E4E0D5;
+    --accent:#0E6E68;
+    --accent-ink:#FCFBF8;
+    --accent-soft:#DCEAE7;
+    --neg:#AE3A50;
+    --neg-soft:#F4E1E4;
+    --gold:#A87A28;
+    --shadow:0 1px 2px rgba(24,42,46,.06), 0 8px 20px -14px rgba(24,42,46,.30);
+    --radius:14px;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0F1719;
+      --surface:#162124;
+      --surface-2:#1D2B2F;
+      --ink:#E9E7E0;
+      --ink-2:#9BADAF;
+      --ink-3:#718588;
+      --line:#2A3A3E;
+      --line-soft:#223034;
+      --accent:#4FBDB0;
+      --accent-ink:#0F1719;
+      --accent-soft:#16332F;
+      --neg:#E68094;
+      --neg-soft:#332026;
+      --gold:#D9A94E;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 24px -16px rgba(0,0,0,.8);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0F1719;
+    --surface:#162124;
+    --surface-2:#1D2B2F;
+    --ink:#E9E7E0;
+    --ink-2:#9BADAF;
+    --ink-3:#718588;
+    --line:#2A3A3E;
+    --line-soft:#223034;
+    --accent:#4FBDB0;
+    --accent-ink:#0F1719;
+    --accent-soft:#16332F;
+    --neg:#E68094;
+    --neg-soft:#332026;
+    --gold:#D9A94E;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.6;
+    -webkit-text-size-adjust:100%;
+  }
+  .num{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+  .wrap{max-width:440px;margin:0 auto;padding:0 16px 96px}
+
+  /* ---------- header ---------- */
+  .top{
+    padding:26px 0 18px;
+    display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  }
+  .brand-eyebrow{
+    font-family:"Gothic A1",sans-serif;
+    font-size:11px;font-weight:700;letter-spacing:.22em;
+    color:var(--accent);text-transform:uppercase;margin:0 0 2px;
+  }
+  .brand-title{
+    font-family:"Gothic A1","Apple SD Gothic Neo",sans-serif;
+    font-size:29px;font-weight:800;letter-spacing:-.035em;line-height:1.1;
+    margin:0;text-wrap:balance;
+  }
+  .brand-sub{margin:6px 0 0;font-size:12.5px;color:var(--ink-2)}
+  .stamp{
+    flex:none;width:58px;height:58px;border-radius:50%;
+    border:1.5px dashed var(--accent);
+    display:grid;place-items:center;text-align:center;
+    color:var(--accent);transform:rotate(-9deg);
+    font-family:"Gothic A1",sans-serif;font-weight:800;font-size:11px;line-height:1.25;
+    letter-spacing:.02em;opacity:.85;
+  }
+
+  /* ---------- step cards ---------- */
+  .step{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    margin-top:14px;
+    overflow:hidden;
+  }
+  .step-head{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 16px 12px;
+  }
+  .step-no{
+    flex:none;width:22px;height:22px;border-radius:6px;
+    background:var(--accent);color:var(--accent-ink);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;
+    display:grid;place-items:center;
+  }
+  .step-title{
+    font-family:"Gothic A1",sans-serif;font-weight:700;font-size:16px;
+    letter-spacing:-.02em;margin:0;flex:1;
+  }
+  .step-note{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+  .step-body{padding:0 16px 16px}
+
+  /* ---------- form controls ---------- */
+  label.fl{
+    display:block;font-size:11px;font-weight:600;letter-spacing:.1em;
+    color:var(--ink-2);text-transform:uppercase;margin:0 0 5px;
+  }
+  input,select,button,textarea{font-family:inherit;font-size:15px;color:inherit}
+  input[type="text"],input[type="date"],input[type="number"],select{
+    width:100%;padding:11px 12px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:10px;
+    color:var(--ink);
+    appearance:none;
+  }
+  input[type="number"]{ -moz-appearance:textfield }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none;margin:0 }
+  select{
+    background-image:linear-gradient(45deg,transparent 50%,var(--ink-2) 50%),linear-gradient(135deg,var(--ink-2) 50%,transparent 50%);
+    background-position:calc(100% - 17px) calc(50% + 1px),calc(100% - 12px) calc(50% + 1px);
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+    padding-right:34px;
+  }
+  input:focus-visible,select:focus-visible,button:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
+  }
+  input::placeholder{color:var(--ink-3)}
+
+  .row{display:flex;gap:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field{display:flex;flex-direction:column;min-width:0}
+  .field + .field{margin-top:10px}
+
+  .btn{
+    border:1px solid transparent;border-radius:10px;
+    padding:11px 14px;font-weight:600;cursor:pointer;
+    background:var(--accent);color:var(--accent-ink);
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{transform:scale(.985)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn-full{width:100%}
+  .btn-ghost{background:transparent;color:var(--ink-2);border-color:var(--line)}
+  .btn-danger{background:transparent;color:var(--neg);border-color:var(--neg)}
+  .btn-sm{padding:8px 12px;font-size:13.5px}
+
+  /* ---------- people chips ---------- */
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--accent-soft);color:var(--accent);
+    border-radius:999px;padding:6px 8px 6px 13px;
+    font-size:13.5px;font-weight:600;
+  }
+  .chip button{
+    border:0;background:transparent;color:inherit;cursor:pointer;
+    width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+    font-size:15px;line-height:1;opacity:.55;padding:0;
+  }
+  .chip button:hover{opacity:1}
+
+  .empty{
+    font-size:13px;color:var(--ink-3);
+    border:1px dashed var(--line);border-radius:10px;
+    padding:14px;text-align:center;margin-top:12px;
+  }
+  .hint{font-size:12px;color:var(--ink-3);margin:8px 0 0}
+  .warn{font-size:12.5px;color:var(--neg);margin:8px 0 0;min-height:0}
+
+  /* ---------- expense list ---------- */
+  .daygroup{margin-top:16px}
+  .dayhead{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:0 2px 6px;border-bottom:1px solid var(--line-soft);
+  }
+  .daydate{
+    font-family:"Gothic A1",sans-serif;font-weight:700;font-size:13px;
+    letter-spacing:.02em;color:var(--ink);
+  }
+  .daysum{font-size:12px;color:var(--ink-3)}
+  .exp{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 2px;border-bottom:1px solid var(--line-soft);
+  }
+  .exp-main{flex:1;min-width:0}
+  .exp-item{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .exp-payer{font-size:12px;color:var(--ink-2);margin-top:1px}
+  .exp-amt{font-size:14.5px;font-weight:600;white-space:nowrap}
+  .exp-del{
+    flex:none;border:0;background:transparent;color:var(--ink-3);
+    cursor:pointer;font-size:17px;line-height:1;padding:4px 2px;border-radius:6px;
+  }
+  .exp-del:hover{color:var(--neg)}
+
+  /* ---------- totals ---------- */
+  .totals{
+    display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--line);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;margin-top:16px;
+  }
+  .tcell{background:var(--surface-2);padding:12px 14px}
+  .tlabel{font-size:11px;letter-spacing:.1em;color:var(--ink-2);font-weight:600}
+  .tvalue{font-size:19px;font-weight:600;margin-top:2px}
+
+  /* ---------- settlement ---------- */
+  .balance{display:flex;flex-direction:column;gap:0;margin-top:4px}
+  .bal{
+    display:grid;grid-template-columns:1fr auto;align-items:center;
+    padding:10px 0;border-bottom:1px solid var(--line-soft);gap:10px;
+  }
+  .bal:last-child{border-bottom:0}
+  .bal-name{font-weight:600;font-size:14.5px}
+  .bal-detail{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+  .bal-net{font-size:14.5px;font-weight:600;text-align:right}
+  .pos{color:var(--accent)}
+  .neg{color:var(--neg)}
+  .zero{color:var(--ink-3)}
+
+  .transfers{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .tr{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface-2);border:1px solid var(--line);
+    border-radius:12px;padding:12px 13px;
+  }
+  .tr-from{font-weight:600;font-size:14.5px}
+  .tr-arrow{color:var(--accent);font-size:15px;flex:none}
+  .tr-to{font-weight:600;font-size:14.5px;flex:1}
+  .tr-amt{font-weight:600;font-size:15px;color:var(--accent);white-space:nowrap}
+  .settled{
+    text-align:center;padding:18px 14px;border-radius:12px;
+    background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px;
+  }
+
+  .divider{
+    display:flex;align-items:center;gap:10px;
+    margin:18px 0 10px;color:var(--ink-3);
+    font-size:11px;font-weight:600;letter-spacing:.14em;
+  }
+  .divider::before,.divider::after{content:"";height:1px;background:var(--line);flex:1}
+
+  /* ---------- copy box ---------- */
+  .copybox{
+    margin-top:12px;background:var(--bg);
+    border:1px solid var(--line);border-radius:12px;
+    padding:12px;font-size:12.5px;line-height:1.65;
+    white-space:pre-wrap;word-break:break-word;
+    max-height:190px;overflow:auto;color:var(--ink-2);
+  }
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translate(-50%,14px);
+    background:var(--ink);color:var(--bg);
+    padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;
+    opacity:0;pointer-events:none;transition:opacity .22s ease, transform .22s ease;
+    z-index:50;box-shadow:0 10px 30px -12px rgba(0,0,0,.5);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  .footer-actions{margin-top:22px;display:flex;flex-direction:column;gap:8px}
+  .reset-confirm{
+    border:1px solid var(--neg);background:var(--neg-soft);
+    border-radius:12px;padding:14px;text-align:center;
+  }
+  .reset-confirm p{margin:0 0 10px;font-size:13.5px;color:var(--ink)}
+  .reset-confirm .row{justify-content:center}
+
+  .foot{margin-top:26px;text-align:center;font-size:11.5px;color:var(--ink-3)}
+
+  [hidden]{display:none !important}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <p class="brand-eyebrow">Travel Split</p>
+      <h1 class="brand-title">N빵 정산기</h1>
+      <p class="brand-sub">참석자 → 날짜 → 항목 → 금액 → 결제자</p>
+    </div>
+    <div class="stamp" aria-hidden="true">N<br>빵</div>
+  </header>
+
+  <!-- STEP 1 -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-no">1</span>
+      <h2 class="step-title">참석자</h2>
+      <span class="step-note" id="peopleCount">0명</span>
+    </div>
+    <div class="step-body">
+      <div class="row">
+        <input type="text" id="nameInput" placeholder="이름 입력" autocomplete="off" maxlength="12" aria-label="참석자 이름">
+        <button class="btn" id="addPerson" type="button">추가</button>
+      </div>
+      <p class="warn" id="peopleWarn" hidden></p>
+      <div class="chips" id="peopleChips"></div>
+      <div class="empty" id="peopleEmpty">먼저 함께 여행한 사람들을 등록해 주세요</div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-no">2</span>
+      <h2 class="step-title">지출 입력</h2>
+      <span class="step-note" id="expCount">0건</span>
+    </div>
+    <div class="step-body">
+      <div class="field">
+        <label class="fl" for="dateInput">날짜</label>
+        <input type="date" id="dateInput">
+      </div>
+      <div class="field">
+        <label class="fl" for="itemInput">항목</label>
+        <input type="text" id="itemInput" placeholder="예: 첫날 저녁, 숙소, 렌트카" autocomplete="off" maxlength="30">
+      </div>
+      <div class="field">
+        <label class="fl" for="amountInput">사용한 비용 (원)</label>
+        <input type="number" id="amountInput" placeholder="0" inputmode="numeric" min="0" step="1">
+      </div>
+      <div class="field">
+        <label class="fl" for="payerInput">결제자</label>
+        <select id="payerInput"></select>
+      </div>
+      <p class="warn" id="expWarn" hidden></p>
+      <button class="btn btn-full" id="addExpense" type="button" style="margin-top:12px">지출 추가</button>
+
+      <div id="expList"></div>
+      <div class="empty" id="expEmpty">아직 등록된 지출이 없어요</div>
+
+      <div class="totals" id="totals" hidden>
+        <div class="tcell">
+          <div class="tlabel">총 지출</div>
+          <div class="tvalue num" id="grandTotal">₩0</div>
+        </div>
+        <div class="tcell">
+          <div class="tlabel">1인당</div>
+          <div class="tvalue num" id="perPerson">₩0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step">
+    <div class="step-head">
+      <span class="step-no">3</span>
+      <h2 class="step-title">정산 결과</h2>
+      <span class="step-note" id="trCount"></span>
+    </div>
+    <div class="step-body">
+      <div id="resultArea">
+        <div class="empty" id="resultEmpty">참석자와 지출을 입력하면 정산 결과가 나와요</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-actions">
+    <button class="btn btn-full" id="copyBtn" type="button" disabled>카톡용으로 복사하기</button>
+    <button class="btn btn-ghost btn-full" id="toggleText" type="button" hidden>복사될 내용 보기</button>
+    <div class="copybox" id="copyBox" hidden></div>
+
+    <button class="btn btn-danger btn-full" id="resetBtn" type="button" style="margin-top:6px">전체 초기화</button>
+    <div class="reset-confirm" id="resetConfirm" hidden>
+      <p>참석자와 지출 내역이 모두 지워져요. 정말 초기화할까요?</p>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" id="resetCancel" type="button">취소</button>
+        <button class="btn btn-sm" id="resetYes" type="button" style="background:var(--neg);color:#fff">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot">모든 지출은 참석자 전원이 균등하게 나눠요.<br>입력한 내용은 이 화면을 닫으면 사라집니다.</p>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var state = { people: [], expenses: [] };
+  var seq = 1;
+  var uid = function(){ return "id" + (seq++); };
+
+  var $ = function(id){ return document.getElementById(id); };
+
+  /* ---------- helpers ---------- */
+  function won(n){
+    return "₩" + Math.round(n).toLocaleString("ko-KR");
+  }
+  function plainWon(n){
+    return Math.round(n).toLocaleString("ko-KR") + "원";
+  }
+  function fmtDate(iso){
+    var p = iso.split("-");
+    return p[1] + "/" + p[2];
+  }
+  function fmtDateLong(iso){
+    var p = iso.split("-");
+    var d = new Date(iso + "T00:00:00");
+    var wd = ["일","월","화","수","목","금","토"][d.getDay()];
+    return p[0] + "." + p[1] + "." + p[2] + " (" + wd + ")";
+  }
+  function todayISO(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var day = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+  function personName(id){
+    for (var i=0;i<state.people.length;i++) if (state.people[i].id===id) return state.people[i].name;
+    return "?";
+  }
+  function showWarn(el, msg){
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(el._t);
+    el._t = setTimeout(function(){ el.hidden = true; }, 3200);
+  }
+  var toastTimer;
+  function toast(msg){
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 1900);
+  }
+
+  /* ---------- settlement math ---------- */
+  // 전원 균등 분배. 1원 단위 나머지는 참석자 순서대로 1원씩 더 부담.
+  function computeBalances(){
+    var n = state.people.length;
+    var owe = {}, paid = {};
+    state.people.forEach(function(p){ owe[p.id]=0; paid[p.id]=0; });
+    if (!n) return { owe:owe, paid:paid, total:0 };
+
+    var total = 0;
+    state.expenses.forEach(function(e, idx){
+      total += e.amount;
+      paid[e.payerId] = (paid[e.payerId]||0) + e.amount;
+      var base = Math.floor(e.amount / n);
+      var rem  = e.amount - base * n;
+      for (var i=0;i<n;i++){
+        // 나머지 1원은 지출마다 시작점을 옮겨서 특정인에게 몰리지 않게 함
+        var extra = ((i - idx) % n + n) % n < rem ? 1 : 0;
+        owe[state.people[i].id] += base + extra;
+      }
+    });
+    return { owe:owe, paid:paid, total:total };
+  }
+
+  // 최소 송금 횟수에 가까운 그리디 매칭
+  function computeTransfers(bal){
+    var creditors = [], debtors = [];
+    state.people.forEach(function(p){
+      var net = (bal.paid[p.id]||0) - (bal.owe[p.id]||0);
+      if (net > 0) creditors.push({ id:p.id, amt:net });
+      else if (net < 0) debtors.push({ id:p.id, amt:-net });
+    });
+    creditors.sort(function(a,b){ return b.amt-a.amt; });
+    debtors.sort(function(a,b){ return b.amt-a.amt; });
+
+    var out = [], i=0, j=0, guard=0;
+    while (i<debtors.length && j<creditors.length && guard++ < 1000){
+      var amt = Math.min(debtors[i].amt, creditors[j].amt);
+      if (amt > 0) out.push({ from:debtors[i].id, to:creditors[j].id, amt:amt });
+      debtors[i].amt -= amt;
+      creditors[j].amt -= amt;
+      if (debtors[i].amt === 0) i++;
+      if (creditors[j].amt === 0) j++;
+    }
+    return out;
+  }
+
+  /* ---------- render ---------- */
+  function renderPeople(){
+    var wrap = $("peopleChips");
+    wrap.innerHTML = "";
+    state.people.forEach(function(p){
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      var label = document.createElement("span");
+      label.textContent = p.name;
+      var x = document.createElement("button");
+      x.type = "button";
+      x.setAttribute("aria-label", p.name + " 삭제");
+      x.textContent = "×";
+      x.addEventListener("click", function(){ removePerson(p.id); });
+      chip.appendChild(label); chip.appendChild(x);
+      wrap.appendChild(chip);
+    });
+    $("peopleEmpty").hidden = state.people.length > 0;
+    $("peopleCount").textContent = state.people.length + "명";
+
+    var sel = $("payerInput");
+    var prev = sel.value;
+    sel.innerHTML = "";
+    if (!state.people.length){
+      var o = document.createElement("option");
+      o.value = ""; o.textContent = "참석자를 먼저 등록하세요";
+      sel.appendChild(o);
+    } else {
+      state.people.forEach(function(p){
+        var o = document.createElement("option");
+        o.value = p.id; o.textContent = p.name;
+        sel.appendChild(o);
+      });
+      if (prev && state.people.some(function(p){return p.id===prev;})) sel.value = prev;
+    }
+  }
+
+  function renderExpenses(){
+    var host = $("expList");
+    host.innerHTML = "";
+    $("expEmpty").hidden = state.expenses.length > 0;
+    $("expCount").textContent = state.expenses.length + "건";
+    $("totals").hidden = state.expenses.length === 0;
+
+    var byDate = {};
+    state.expenses.forEach(function(e){
+      (byDate[e.date] = byDate[e.date] || []).push(e);
+    });
+    Object.keys(byDate).sort().forEach(function(date){
+      var list = byDate[date];
+      var sum = list.reduce(function(a,b){ return a+b.amount; },0);
+
+      var g = document.createElement("div");
+      g.className = "daygroup";
+
+      var head = document.createElement("div");
+      head.className = "dayhead";
+      var dd = document.createElement("span");
+      dd.className = "daydate";
+      dd.textContent = fmtDateLong(date);
+      var ds = document.createElement("span");
+      ds.className = "daysum num";
+      ds.textContent = won(sum);
+      head.appendChild(dd); head.appendChild(ds);
+      g.appendChild(head);
+
+      list.forEach(function(e){
+        var row = document.createElement("div");
+        row.className = "exp";
+
+        var main = document.createElement("div");
+        main.className = "exp-main";
+        var it = document.createElement("div");
+        it.className = "exp-item";
+        it.textContent = e.item;
+        var py = document.createElement("div");
+        py.className = "exp-payer";
+        py.textContent = "결제 · " + personName(e.payerId);
+        main.appendChild(it); main.appendChild(py);
+
+        var amt = document.createElement("div");
+        amt.className = "exp-amt num";
+        amt.textContent = won(e.amount);
+
+        var del = document.createElement("button");
+        del.type = "button";
+        del.className = "exp-del";
+        del.setAttribute("aria-label", e.item + " 삭제");
+        del.textContent = "×";
+        del.addEventListener("click", function(){
+          state.expenses = state.expenses.filter(function(x){ return x.id !== e.id; });
+          renderAll();
+        });
+
+        row.appendChild(main); row.appendChild(amt); row.appendChild(del);
+        g.appendChild(row);
+      });
+
+      host.appendChild(g);
+    });
+
+    var total = state.expenses.reduce(function(a,b){ return a+b.amount; },0);
+    $("grandTotal").textContent = won(total);
+    $("perPerson").textContent = state.people.length
+      ? won(Math.round(total / state.people.length))
+      : "—";
+  }
+
+  function renderResult(){
+    var area = $("resultArea");
+    area.innerHTML = "";
+    var ready = state.people.length > 0 && state.expenses.length > 0;
+    $("copyBtn").disabled = !ready;
+    $("toggleText").hidden = !ready;
+    if (!ready){
+      $("copyBox").hidden = true;
+      $("toggleText").textContent = "복사될 내용 보기";
+      $("trCount").textContent = "";
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = state.people.length
+        ? "지출을 입력하면 정산 결과가 나와요"
+        : "참석자와 지출을 입력하면 정산 결과가 나와요";
+      area.appendChild(e);
+      return;
+    }
+
+    var bal = computeBalances();
+    var transfers = computeTransfers(bal);
+    $("trCount").textContent = transfers.length ? transfers.length + "번 송금" : "정산 완료";
+
+    // 개인별 잔액
+    var d1 = document.createElement("div");
+    d1.className = "divider";
+    d1.textContent = "개인별 잔액";
+    area.appendChild(d1);
+
+    var wrap = document.createElement("div");
+    wrap.className = "balance";
+    state.people.forEach(function(p){
+      var net = (bal.paid[p.id]||0) - (bal.owe[p.id]||0);
+      var row = document.createElement("div");
+      row.className = "bal";
+
+      var left = document.createElement("div");
+      var nm = document.createElement("div");
+      nm.className = "bal-name";
+      nm.textContent = p.name;
+      var de = document.createElement("div");
+      de.className = "bal-detail num";
+      de.textContent = "낸 돈 " + won(bal.paid[p.id]||0) + " · 낼 돈 " + won(bal.owe[p.id]||0);
+      left.appendChild(nm); left.appendChild(de);
+
+      var right = document.createElement("div");
+      right.className = "bal-net num " + (net>0 ? "pos" : net<0 ? "neg" : "zero");
+      right.textContent = net > 0 ? "+" + won(net) : net < 0 ? "−" + won(-net) : "±0";
+
+      row.appendChild(left); row.appendChild(right);
+      wrap.appendChild(row);
+    });
+    area.appendChild(wrap);
+
+    // 송금
+    var d2 = document.createElement("div");
+    d2.className = "divider";
+    d2.textContent = "송금 안내";
+    area.appendChild(d2);
+
+    if (!transfers.length){
+      var ok = document.createElement("div");
+      ok.className = "settled";
+      ok.textContent = "주고받을 돈이 없어요. 정산 끝!";
+      area.appendChild(ok);
+    } else {
+      var tw = document.createElement("div");
+      tw.className = "transfers";
+      transfers.forEach(function(t){
+        var r = document.createElement("div");
+        r.className = "tr";
+        var f = document.createElement("span");
+        f.className = "tr-from"; f.textContent = personName(t.from);
+        var a = document.createElement("span");
+        a.className = "tr-arrow"; a.textContent = "→";
+        var to = document.createElement("span");
+        to.className = "tr-to"; to.textContent = personName(t.to);
+        var am = document.createElement("span");
+        am.className = "tr-amt num"; am.textContent = won(t.amt);
+        r.appendChild(f); r.appendChild(a); r.appendChild(to); r.appendChild(am);
+        tw.appendChild(r);
+      });
+      area.appendChild(tw);
+    }
+
+    if ($("copyBox").hidden === false) $("copyBox").textContent = buildText();
+  }
+
+  function renderAll(){
+    renderPeople();
+    renderExpenses();
+    renderResult();
+  }
+
+  /* ---------- kakao text ---------- */
+  function buildText(){
+    var bal = computeBalances();
+    var transfers = computeTransfers(bal);
+    var dates = state.expenses.map(function(e){ return e.date; }).sort();
+    var range = dates.length
+      ? (dates[0] === dates[dates.length-1]
+          ? dates[0].replace(/-/g,".")
+          : dates[0].replace(/-/g,".") + " ~ " + dates[dates.length-1].replace(/-/g,"."))
+      : "";
+
+    var lines = [];
+    lines.push("[여행 정산]");
+    if (range) lines.push(range + " · " + state.people.length + "명");
+    lines.push("총 " + plainWon(bal.total) + " / 1인당 약 " + plainWon(bal.total/state.people.length));
+    lines.push("");
+    lines.push("● 지출 내역");
+    var byDate = {};
+    state.expenses.forEach(function(e){ (byDate[e.date]=byDate[e.date]||[]).push(e); });
+    Object.keys(byDate).sort().forEach(function(d){
+      byDate[d].forEach(function(e){
+        lines.push(fmtDate(d) + " " + e.item + " " + plainWon(e.amount) + " (" + personName(e.payerId) + ")");
+      });
+    });
+    lines.push("");
+    lines.push("● 개인별");
+    state.people.forEach(function(p){
+      var net = (bal.paid[p.id]||0) - (bal.owe[p.id]||0);
+      var tag = net > 0 ? "받을 돈 " + plainWon(net)
+              : net < 0 ? "보낼 돈 " + plainWon(-net)
+              : "정산 완료";
+      lines.push(p.name + " : " + tag);
+    });
+    lines.push("");
+    lines.push("● 송금");
+    if (!transfers.length){
+      lines.push("주고받을 돈 없음");
+    } else {
+      transfers.forEach(function(t){
+        lines.push(personName(t.from) + " → " + personName(t.to) + " " + plainWon(t.amt));
+      });
+    }
+    return lines.join("\n");
+  }
+
+  function copyText(){
+    var text = buildText();
+    var done = function(){ toast("복사했어요. 카톡에 붙여넣기 하세요"); };
+    var fail = function(){
+      var box = $("copyBox");
+      box.textContent = text;
+      box.hidden = false;
+      $("toggleText").textContent = "내용 접기";
+      toast("길게 눌러 직접 복사해 주세요");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(function(){ legacyCopy(text, done, fail); });
+    } else {
+      legacyCopy(text, done, fail);
+    }
+  }
+  function legacyCopy(text, done, fail){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly","");
+      ta.style.position = "fixed";
+      ta.style.top = "-1000px";
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      var ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      ok ? done() : fail();
+    } catch(err){ fail(); }
+  }
+
+  /* ---------- actions ---------- */
+  function addPerson(){
+    var input = $("nameInput");
+    var name = input.value.trim();
+    if (!name){ showWarn($("peopleWarn"), "이름을 입력해 주세요."); return; }
+    if (state.people.some(function(p){ return p.name === name; })){
+      showWarn($("peopleWarn"), "'" + name + "' 은 이미 있어요. 다른 이름으로 구분해 주세요.");
+      return;
+    }
+    state.people.push({ id: uid(), name: name });
+    input.value = "";
+    input.focus();
+    renderAll();
+  }
+
+  function removePerson(id){
+    var used = state.expenses.some(function(e){ return e.payerId === id; });
+    if (used){
+      showWarn($("peopleWarn"), personName(id) + " 님이 결제한 지출이 있어요. 그 지출을 먼저 삭제해 주세요.");
+      return;
+    }
+    state.people = state.people.filter(function(p){ return p.id !== id; });
+    renderAll();
+  }
+
+  function addExpense(){
+    var date = $("dateInput").value;
+    var item = $("itemInput").value.trim();
+    var amount = Math.round(Number($("amountInput").value));
+    var payerId = $("payerInput").value;
+    var w = $("expWarn");
+
+    if (!state.people.length){ showWarn(w, "1단계에서 참석자를 먼저 등록해 주세요."); return; }
+    if (!date){ showWarn(w, "날짜를 선택해 주세요."); return; }
+    if (!item){ showWarn(w, "항목 이름을 적어 주세요."); return; }
+    if (!amount || amount <= 0 || !isFinite(amount)){ showWarn(w, "사용한 비용을 1원 이상으로 입력해 주세요."); return; }
+    if (!payerId){ showWarn(w, "결제자를 선택해 주세요."); return; }
+
+    state.expenses.push({ id: uid(), date: date, item: item, amount: amount, payerId: payerId });
+    $("itemInput").value = "";
+    $("amountInput").value = "";
+    $("itemInput").focus();
+    renderAll();
+    toast("추가했어요");
+  }
+
+  function resetAll(){
+    state = { people: [], expenses: [] };
+    $("nameInput").value = "";
+    $("itemInput").value = "";
+    $("amountInput").value = "";
+    $("dateInput").value = todayISO();
+    $("copyBox").hidden = true;
+    $("copyBox").textContent = "";
+    $("toggleText").textContent = "복사될 내용 보기";
+    $("resetConfirm").hidden = true;
+    $("resetBtn").hidden = false;
+    renderAll();
+    toast("초기화했어요");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* ---------- wiring ---------- */
+  $("dateInput").value = todayISO();
+
+  $("addPerson").addEventListener("click", addPerson);
+  $("nameInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); addPerson(); }
+  });
+  $("addExpense").addEventListener("click", addExpense);
+  $("amountInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); addExpense(); }
+  });
+  $("itemInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); $("amountInput").focus(); }
+  });
+
+  $("copyBtn").addEventListener("click", copyText);
+  $("toggleText").addEventListener("click", function(){
+    var box = $("copyBox");
+    if (box.hidden){
+      box.textContent = buildText();
+      box.hidden = false;
+      this.textContent = "내용 접기";
+    } else {
+      box.hidden = true;
+      this.textContent = "복사될 내용 보기";
+    }
+  });
+
+  $("resetBtn").addEventListener("click", function(){
+    $("resetConfirm").hidden = false;
+    this.hidden = true;
+  });
+  $("resetCancel").addEventListener("click", function(){
+    $("resetConfirm").hidden = true;
+    $("resetBtn").hidden = false;
+  });
+  $("resetYes").addEventListener("click", resetAll);
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
